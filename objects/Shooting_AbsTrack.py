@@ -200,10 +200,7 @@ class Shooting_AbsTrack(Model):
 
     def train(self, n_epochs, n_batches, batch_size, val_size):
         hist = {}
-        m_hist = []
-        v_hist = []
-        var_list = tf.trainable_variables()
-        wgt_list = [val for key, val in self.weights.items()]
+        var_list = tf.global_variables()
 
         for key in self.loss_ops.keys():
             hist['ave_%s'%key] = np.zeros(n_epochs)
@@ -263,9 +260,7 @@ class Shooting_AbsTrack(Model):
 
                 feed_dict={self.inputs['s_p_0']:s_p_0, self.inputs['s_s_0']:s_s_0, self.inputs['p_p']:p_p, self.inputs['p_s']:p_s, self.training:True}
 
-                cur_vars = self.sess.run(var_list)
-                m_hist.append([self.sess.run(self.params['trainer'].get_slot(var, 'm')) for var in wgt_list])
-                v_hist.append([self.sess.run(self.params['trainer'].get_slot(var, 'v')) for var in wgt_list])
+                old_vars = self.sess.run(var_list)
 
                 loss, _ = self.sess.run([self.loss_ops, self.train_ops], feed_dict=feed_dict)
 
@@ -275,14 +270,16 @@ class Shooting_AbsTrack(Model):
                     if np.isnan(var).any():
                         print('NAAAAAAAAANS')
                         has_nans = True
-                        import pdb; pdb.set_trace()
                         break
                 for key in loss.keys():
                     if np.isnan(loss[key]):
                         print('NAAAAAAAAANS')
                         has_nans = True
-                        import pdb; pdb.set_trace()
                         break
+                        
+                if has_nans:
+                    import pdb; pdb.set_trace()
+                    continue
 
                 for key in self.loss_ops.keys():
                     hist['ave_%s'%key][epoch] += loss[key]
