@@ -18,7 +18,7 @@ from .AbstractDynamics import AbstractDynamics
 from .Serialize import activ_deserialize
 
 class DoubleIntegratorDynamics(AbstractDynamics):
-    bn_hidden = None
+    #bn_hidden = None
 
     def build_network(self, inputs=None, weights=None, scope=None):
         dof = int(self.state_size/2)
@@ -57,8 +57,8 @@ class DoubleIntegratorDynamics(AbstractDynamics):
                     if self.params['use_bias']:
                         weights['b1'] = tf.get_variable('b1', self.params['hidden_size'], initializer=w_init)
                         weights['b2'] = tf.get_variable('b2', dof, initializer=w_init)
-            if self.bn_hidden is None:
-                self.bn_hidden = tf.layers.BatchNormalization(name='hidden_bn')
+            '''if self.bn_hidden is None:
+                self.bn_hidden = tf.layers.BatchNormalization(name='hidden_bn')'''
 
             outputs = {}
             outputs['prnt_states'] = self.build_dynamics(inputs['abst_states'], inputs['prnt_states'], inputs['prnt_params'], weights=weights, training=inputs['training'])
@@ -81,7 +81,7 @@ class DoubleIntegratorDynamics(AbstractDynamics):
         h = tf.matmul(comb, weights['W1'])
         if self.params['use_bias']:
             h = tf.add(h, weights['b1'])
-        h = self.bn_hidden(h, training=training)
+        #h = self.bn_hidden(h, training=training)
         h = activ_deserialize(self.params['hidden_activ'])(h)
 
         a_new = tf.matmul(h, weights['W2'])

@@ -30,8 +30,8 @@ from .Policy import Policy, Policy_AbsTrack
 from .Serialize import activ_deserialize
 
 class BasicPol(Policy):
-    bn_hidden = None
-    bn_output = None
+    '''bn_hidden = None
+    bn_output = None'''
 
     def setup_weights(self):
         state_size = self.state_size[0]
@@ -44,9 +44,9 @@ class BasicPol(Policy):
             weights['b1'] = tf.get_variable('b1', (self.params['h_size']), initializer=w_init)
             weights['b2'] = tf.get_variable('b2', (actin_size), initializer=w_init)
 
-        if self.bn_hidden is None:
+        '''if self.bn_hidden is None:
             self.bn_hidden = tf.layers.BatchNormalization(name='hidden_bn')
-            self.bn_output = tf.layers.BatchNormalization(name='output_bn')
+            self.bn_output = tf.layers.BatchNormalization(name='output_bn')'''
 
         return weights
 
@@ -67,7 +67,7 @@ class BasicPol(Policy):
         h = tf.matmul(s, weights['W1'])
         if self.params['use_bias']:
             h = tf.add(h, weights['b1'])
-        h = self.bn_hidden(h, training=training)
+        #h = self.bn_hidden(h, training=training)
         h = activ_deserialize(self.params['activ'])(h)
 
         a = tf.matmul(h, weights['W2'])
@@ -75,7 +75,7 @@ class BasicPol(Policy):
             a = tf.add(a, weights['b2'])
 
         if limited:
-            a = self.bn_output(a, training=training)
+            #a = self.bn_output(a, training=training)
             a = tf.nn.tanh(a)
             a_sep = []
             for i in range(self.actin_size[0]):
@@ -85,8 +85,8 @@ class BasicPol(Policy):
         return a
 
 class BasicPol_Swarm_AbsTrack(Policy_AbsTrack):
-    bn_hidden = None
-    bn_output = None
+    '''bn_hidden = None
+    bn_output = None'''
 
     def setup_weights(self):
         max_swarm_size = self.params['max_swarm_size']
@@ -122,9 +122,9 @@ class BasicPol_Swarm_AbsTrack(Policy_AbsTrack):
                 weights['b1'] = tf.get_variable('b1', self.params['h_size'], initializer=w_init)
                 weights['b2'] = tf.get_variable('b2', actin_size, initializer=w_init)
 
-        if self.bn_hidden is None:
+        '''if self.bn_hidden is None:
             self.bn_hidden = tf.layers.BatchNormalization(name='hidden_bn')
-            self.bn_output = tf.layers.BatchNormalization(name='output_bn')
+            self.bn_output = tf.layers.BatchNormalization(name='output_bn')'''
 
         return weights
 
@@ -190,13 +190,13 @@ class BasicPol_Swarm_AbsTrack(Policy_AbsTrack):
             h = tf.einsum('ijk,kl->ijl', comb_in, weights['W1'])
             if self.params['use_bias']:
                 h = tf.add(h, weights['b1'])
-            self.bn_hidden(h, training=training)
+            #self.bn_hidden(h, training=training)
             h = activ_deserialize(self.params['activ'])(h)
             a = tf.einsum('ijk,kl->ijl', h, weights['W2'])
             if self.params['use_bias']:
                 a = tf.add(a, weights['b2'])
             if limited:
-                a = self.bn_output(a, training=training)
+                #a = self.bn_output(a, training=training)
                 a = tf.nn.tanh(a)
                 a_sep = []
                 for i in range(actin_size):

@@ -24,10 +24,12 @@ from .AbstractEncoder import AbstractEncoder
 from .Serialize import activ_deserialize
 
 class HierarchicalEncoder(AbstractEncoder):
-    bn_hidden_tran = None
+    '''bn_hidden_tran = None
     bn_output_tran = None
     bn_hidden_comb = None
-    bn_output_comb = None
+    bn_output_comb = None'''
+    droput_tran = None
+    droput_comb = None
 
     def build_network(self, inputs=None, weights=None, scope=None):
         if scope is None:
@@ -68,11 +70,15 @@ class HierarchicalEncoder(AbstractEncoder):
                         weights['comb_b1'] = tf.get_variable('comb_b1', self.params['comb_h_size'], initializer=w_init)
                         weights['comb_b2'] = tf.get_variable('comb_b2', self.abs_size, initializer=w_init)
 
-            if self.bn_hidden_tran is None:
+            '''if self.bn_hidden_tran is None:
                 self.bn_hidden_tran = tf.layers.BatchNormalization(name='tran_hidden_bn')
                 self.bn_output_tran = tf.layers.BatchNormalization(name='tran_output_bn')
                 self.bn_hidden_comb = tf.layers.BatchNormalization(name='comb_hidden_bn')
-                self.bn_output_comb = tf.layers.BatchNormalization(name='comb_output_bn')
+                self.bn_output_comb = tf.layers.BatchNormalization(name='comb_output_bn')'''
+            if self.droput_tran is None and 'tran_dropout_rate' in self.params.keys():
+                self.dropout_tran = tf.keras.layers.Dropout(rate=self.params['tran_dropout_rate'])
+            if self.droput_comb is None and 'comb_dropout_rate' in self.params.keys():
+                self.dropout_comb = tf.keras.layers.Dropout(rate=self.params['comb_dropout_rate'])
 
             outputs = {}
 
@@ -113,15 +119,15 @@ class HierarchicalEncoder(AbstractEncoder):
         h = tf.matmul(comb_in, weights['tran_W1'])
         if self.params['tran_use_bias']:
             h = tf.add(h, weights['tran_b1'])
-        h = self.bn_hidden_tran(h, training=training)
+        #h = self.bn_hidden_tran(h, training=training)
         h = activ_deserialize(self.params['tran_activ'])(h)
         if 'tran_dropout_rate' in self.params.keys():
-            h = tf.layers.dropout(h, rate=self.params['tran_dropout_rate'], training=training)
+            h = self.dropout_tran(h, training=training)
         abst_state = tf.matmul(h, weights['tran_W2'])
         if self.params['tran_use_bias']:
             abst_state = tf.add(abst_state, weights['tran_b2'])
         if 'a_limit' in self.params.keys():
-            abst_state = self.bn_output_tran(abst_state, training=training)
+            #abst_state = self.bn_output_tran(abst_state, training=training)
             abst_state = tf.tanh(abst_state)*self.a_limit
         return abst_state
 
@@ -130,15 +136,15 @@ class HierarchicalEncoder(AbstractEncoder):
         h = tf.matmul(comb_in, weights['comb_W1'])
         if self.params['comb_use_bias']:
             h = tf.add(h, weights['comb_b1'])
-        h = self.bn_hidden_comb(h, training=training)
+        #h = self.bn_hidden_comb(h, training=training)
         h = activ_deserialize(self.params['comb_activ'])(h)
         if 'comb_dropout_rate' in self.params.keys():
-            h = tf.layers.dropout(h, rate=self.params['comb_dropout_rate'], training=training)
+            h = self.dropout_comb(h, training=training)
         abst_state = tf.matmul(h, weights['comb_W2'])
         if self.params['comb_use_bias']:
             abst_state = tf.add(abst_state, weights['comb_b2'])
         if 'a_limit' in self.params.keys():
-            abst_state = self.bn_output_comb(abst_state, training=training)
+            #abst_state = self.bn_output_comb(abst_state, training=training)
             abst_state = tf.tanh(abst_state)*self.a_limit
         return abst_state
 
