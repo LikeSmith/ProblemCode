@@ -190,7 +190,9 @@ class Shooting_AbsTrack(Model):
 
             train_ops = {}
             with tf.variable_scope('train'):
-                train_ops['train_pol'] = self.params['trainer'].minimize(loss_all)
+                self.update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+                with tf.control_dependencies(self.update_ops):
+                    train_ops['train_pol'] = self.params['trainer'].minimize(loss_all)
 
         self.loss_all = loss_all
 
