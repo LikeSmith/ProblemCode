@@ -82,15 +82,6 @@ class BasicPol(Policy):
                 a_sep.append(a[:, i]*scale[i] + offset[i])
             a = tf.stack(a_sep, axis=1, name='limited_a')
 
-        if 'gamma_hidden' not in weights.keys():
-            weights['gamma_hidden'] = self.bn_hidden.gamma
-        if 'beta_hidden' not in weights.keys():
-            weights['beta_hidden'] = self.bn_hidden.beta
-        if 'gamma_output' not in weights.keys():
-            weights['gamma_output'] = self.bn_output.gamma
-        if 'beta_output' not in weights.keys():
-            weights['beta_output'] = self.bn_output.beta
-
         return a
 
 class BasicPol_Swarm_AbsTrack(Policy_AbsTrack):
@@ -211,14 +202,5 @@ class BasicPol_Swarm_AbsTrack(Policy_AbsTrack):
                 for i in range(actin_size):
                     a_sep.append(a[:, :, i]*scale[i] + offset[i])
                 a = tf.stack(a_sep, axis=2)
-
-        if 'gamma_hidden' not in weights.keys():
-            weights['gamma_hidden'] = self.bn_hidden.gamma
-        if 'beta_hidden' not in weights.keys():
-            weights['beta_hidden'] = self.bn_hidden.beta
-        if 'gamma_output' not in weights.keys():
-            weights['gamma_output'] = self.bn_output.gamma
-        if 'beta_output' not in weights.keys():
-            weights['beta_output'] = self.bn_output.beta
 
         return a

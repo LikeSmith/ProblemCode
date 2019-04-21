@@ -98,6 +98,7 @@ class Shooting_AbsTrack(Model):
                         weights['swm_pol_%s'%key] = self.swm_pol.weights[key]
                     for key in self.prt_pol.weights.keys():
                         weights['prt_pol_%s'%key] = self.prt_pol.weights[key]
+
                     self.gamma_abs = tf.constant(self.params['gamma_abs'], dtype='float')
                     self.gamma_swm = tf.constant(self.params['gamma_swm'], dtype='float')
                     self.gamma_des = tf.constant(self.params['gamma_des'], dtype='float')
@@ -176,98 +177,22 @@ class Shooting_AbsTrack(Model):
                 loss_ops['L_prt'] = tf.reduce_mean(tf.reduce_sum(output_ops['l_prt'], axis=1))
                 loss_ops['L_bnd'] = tf.reduce_mean(tf.reduce_sum(output_ops['l_bnd'], axis=1))
 
-                weights_abs = {**self.abs_enc.weights, **self.abs_dyn.weights}
-                weights_swm = self.swm_pol.weights
-                weights_prt = self.prt_pol.weights
-
-                loss_abs = loss_ops['L_abs']+loss_ops['L_swm']
-                loss_swm = loss_ops['L_swm']+loss_ops['L_bnd']
-                loss_prt = loss_ops['L_prt']+loss_ops['L_swm']
                 loss_all = loss_ops['L_abs']+loss_ops['L_swm']+loss_ops['L_prt']+loss_ops['L_bnd']
 
-                if 'gamma_l1_abs' in self.params.keys():
-                    gamma_l1 = tf.constant(self.params['gamma_l1_abs'], dtype='float')
-                    for key in weights_abs.keys():
-                        loss_abs += gamma_l1*tf.reduce_sum(tf.abs(weights_abs[key]))
-                        loss_all += gamma_l1*tf.reduce_sum(tf.abs(weights_abs[key]))
-                if 'gamma_l2_abs' in self.params.keys():
-                    gamma_l2 = tf.constant(self.params['gamma_l2_abs'], dtype='float')
-                    for key in weights_abs.keys():
-                        loss_abs += gamma_l2*tf.nn.l2_loss(weights_abs[key])
-                        loss_all += gamma_l2*tf.nn.l2_loss(weights_abs[key])
-                if 'gamma_l1_swm' in self.params.keys():
-                    gamma_l1 = tf.constant(self.params['gamma_l1_swm'], dtype='float')
-                    for key in weights_swm.keys():
-                        loss_swm += gamma_l1*tf.reduce_sum(tf.abs(weights_swm[key]))
-                        loss_all += gamma_l1*tf.reduce_sum(tf.abs(weights_swm[key]))
-                if 'gamma_l2_swm' in self.params.keys():
-                    gamma_l2 = tf.constant(self.params['gamma_l2_swm'], dtype='float')
-                    for key in weights_swm.keys():
-                        loss_swm += gamma_l2*tf.nn.l2_loss(weights_swm[key])
-                        loss_all += gamma_l2*tf.nn.l2_loss(weights_swm[key])
-                if 'gamma_l1_prt' in self.params.keys():
-                    gamma_l1 = tf.constant(self.params['gamma_l1_prt'], dtype='float')
-                    for key in weights_prt.keys():
-                        loss_prt += gamma_l1*tf.reduce_sum(tf.abs(weights_prt[key]))
-                        loss_all += gamma_l1*tf.reduce_sum(tf.abs(weights_prt[key]))
-                if 'gamma_l2_prt' in self.params.keys():
-                    gamma_l2 = tf.constant(self.params['gamma_l2_prt'], dtype='float')
-                    for key in weights_prt.keys():
-                        loss_prt += gamma_l2*tf.nn.l2_loss(weights_prt[key])
-                        loss_all += gamma_l2*tf.nn.l2_loss(weights_prt[key])
+                if 'gamma_l1' in self.params.keys():
+                    gamma_l1 = tf.constant(self.params['gamma_l1'], dtype='float')
+                    for key in weights.keys():
+                        loss_all += gamma_l1*tf.reduce_sum(tf.abs(weights[key]))
+                if 'gamma_l2' in self.params.keys():
+                    gamma_l2 = tf.constant(self.params['gamma_l2'], dtype='float')
+                    for key in weights.keys():
+                        loss_all += gamma_l2*tf.nn.l2_loss(weights[key])
 
             train_ops = {}
             with tf.variable_scope('train'):
-                if 'trainer' in self.params.keys():
-                    if 'use_lr_search' in self.params.keys() and self.params['use_lr_search']:
-                        lr = tf.placeholder('float', [], name='lr')
+                train_ops['train_pol'] = self.params['trainer'].minimize(loss_all)
 
-                        self.lr_tf = {}
-                        self.lr_tf['lr'] = lr
-
-                        self.lr_losses = {}
-                        self.lr_losses['lr'] = lambda L_abs, L_swm, L_prt, L_bnd: L_abs+L_swm+L_prt+L_bnd
-
-                        train_ops['train_pol'] = self.params['trainer'](lr).minimize(loss_all)
-                    else:
-                        train_ops['train_pol'] = self.params['trainer'].minimize(loss_all)
-
-                else:
-                    weights_abs_list = [weights_abs[key] for key in weights_abs.keys()]
-                    weights_swm_list = [weights_swm[key] for key in weights_swm.keys()]
-                    weights_prt_list = [weights_prt[key] for key in weights_prt.keys()]
-
-                    if 'use_lr_search' in self.params.keys() and self.params['use_lr_search']:
-                        lr_abs = tf.placeholder('float', [], name='lr_abs')
-                        lr_swm = tf.placeholder('float', [], name='lr_swm')
-                        lr_prt = tf.placeholder('float', [], name='lr_prt')
-
-                        self.lr_tf = {}
-                        self.lr_tf['lr_abs'] = lr_abs
-                        self.lr_tf['lr_swm'] = lr_swm
-                        self.lr_tf['lr_prt'] = lr_prt
-
-                        self.lr_losses = {}
-                        self.lr_losses['lr_abs'] = lambda L_abs, L_swm, L_prt, L_bnd: L_abs+L_swm
-                        self.lr_losses['lr_swm'] = lambda L_abs, L_swm, L_prt, L_bnd: L_swm+L_bnd
-                        self.lr_losses['lr_prt'] = lambda L_abs, L_swm, L_prt, L_bnd: L_prt+L_swm
-
-                        train_ops['train_abs'] = self.params['trainer_abs'](lr_abs).minimize(loss_abs, var_list=weights_abs_list)
-                        train_ops['train_swm'] = self.params['trainer_swm'](lr_swm).minimize(loss_swm, var_list=weights_swm_list)
-                        train_ops['train_prt'] = self.params['trainer_prt'](lr_prt).minimize(loss_prt, var_list=weights_prt_list)
-
-                    else:
-                        train_ops['train_abs'] = self.params['trainer_abs'].minimize(loss_abs, var_list=weights_abs_list)
-                        train_ops['train_swm'] = self.params['trainer_swm'].minimize(loss_swm, var_list=weights_swm_list)
-                        train_ops['train_prt'] = self.params['trainer_prt'].minimize(loss_prt, var_list=weights_prt_list)
-
-        self.loss_abs = loss_abs
-        self.loss_swm = loss_swm
-        self.loss_prt = loss_prt
         self.loss_all = loss_all
-        self.weights_abs_list = [weights_abs[key] for key in weights_abs.keys()]
-        self.weights_swm_list = [weights_swm[key] for key in weights_swm.keys()]
-        self.weights_prt_list = [weights_prt[key] for key in weights_prt.keys()]
 
         return inputs, output_ops, weights, loss_ops, train_ops
 
@@ -275,21 +200,12 @@ class Shooting_AbsTrack(Model):
         hist = {}
         m_hist = []
         v_hist = []
+        var_list = tf.trainable_variables()
+        wgt_list = [val for key, val in self.weights.items()]
 
         for key in self.loss_ops.keys():
             hist['ave_%s'%key] = np.zeros(n_epochs)
             hist['val_%s'%key] = np.zeros(n_epochs)
-
-        if 'use_lr_search' in self.params.keys() and self.params['use_lr_search']:
-            lr = {}
-            ave_loss = {}
-            bst_loss = {}
-            bst_lr = {}
-            done = {}
-            lr_count = {}
-            q = (self.params['lr_max']/self.params['lr_min'])**(1/(n_batches-1))
-            for key in self.lr_tf.keys():
-                hist[key] = np.zeros(n_epochs)
 
         min_weights={}
         min_loss = math.inf
@@ -331,15 +247,6 @@ class Shooting_AbsTrack(Model):
             else:
                 batches = range(n_batches)
 
-            if 'use_lr_search' in self.params.keys() and self.params['use_lr_search']:
-                for key in self.lr_tf.keys():
-                    lr[key] = self.params['lr_min']
-                    ave_loss[key] = 0.0
-                    bst_loss[key] = np.infty
-                    bst_lr[key] = self.params['lr_min']
-                    done[key] = False
-                    lr_count[key] = 0
-
             for batch in batches:
                 if self.params['regen_data']:
                     s_p_0 = self.params['prnt_state_gen'](batch_size)
@@ -354,59 +261,29 @@ class Shooting_AbsTrack(Model):
 
                 feed_dict={self.inputs['s_p_0']:s_p_0, self.inputs['s_s_0']:s_s_0, self.inputs['p_p']:p_p, self.inputs['p_s']:p_s, self.training:True}
 
-                if 'use_lr_search' in self.params.keys() and self.params['use_lr_search']:
-                    for key in self.lr_tf.keys():
-                        feed_dict[self.lr_tf[key]] = lr[key]
-
-                cur_weights = self.save_weights()
-                var_list = tf.trainable_variables()
-                m_hist.append([self.sess.run(self.params['trainer'].get_slot(var, 'm')) for var in var_list])
-                v_hist.append([self.sess.run(self.params['trainer'].get_slot(var, 'v')) for var in var_list])
+                cur_vars = self.sess.run(var_list)
+                m_hist.append([self.sess.run(self.params['trainer'].get_slot(var, 'm')) for var in wgt_list])
+                v_hist.append([self.sess.run(self.params['trainer'].get_slot(var, 'v')) for var in wgt_list])
 
                 loss, _ = self.sess.run([self.loss_ops, self.train_ops], feed_dict=feed_dict)
 
-                new_weights = self.save_weights()
+                new_vars = self.sess.run(var_list)
                 has_nans = False
-                for key in new_weights.keys():
-                    if np.isnan(new_weights[key]).any():
+                for var in new_vars:
+                    if np.isnan(var).any():
                         print('NAAAAAAAAANS')
-                        import pdb; pdb.set_trace()
-                        self.assign_weights(cur_weights)
                         has_nans = True
+                        import pdb; pdb.set_trace()
                         break
                 for key in loss.keys():
                     if np.isnan(loss[key]):
                         print('NAAAAAAAAANS')
-                        import pdb; pdb.set_trace()
-                        self.assign_weights(cur_weights)
                         has_nans = True
+                        import pdb; pdb.set_trace()
                         break
-
-                if has_nans:
-                    continue
 
                 for key in self.loss_ops.keys():
                     hist['ave_%s'%key][epoch] += loss[key]
-
-                if 'use_lr_search' in self.params.keys() and self.params['use_lr_search']:
-                    for key in self.lr_tf.keys():
-                        if not done[key]:
-                            lr_loss = self.lr_losses[key](loss['L_abs'], loss['L_swm'], loss['L_prt'], loss['L_bnd'])
-                            ave_loss[key] = self.params['beta']*ave_loss[key] + (1-self.params['beta'])*lr_loss
-                            smoothed_loss = ave_loss[key]/(1 - self.params['beta']**(batch+1))
-
-                            if smoothed_loss < bst_loss[key]:
-                                bst_loss[key] = smoothed_loss
-                                bst_lr[key] = lr[key]
-                                lr_count[key] = 0
-                            else:
-                                lr_count[key] += 1
-
-                            if lr_count[key] > self.params['lr_count_patience'] or smoothed_loss > 4*bst_loss[key]:
-                                done[key] = True
-                                lr[key] = 10**(math.log10(bst_lr[key]) - 1)
-                            else:
-                                lr[key] *= q
 
                 if self.params['verbosity'] > 1:
                     msg = ''

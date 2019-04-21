@@ -106,23 +106,6 @@ class HierarchicalEncoder(AbstractEncoder):
 
                 self.constituents = const_list
 
-        if 'gamma_hidden_tran' not in weights.keys():
-            weights['gamma_hidden_tran'] = self.bn_hidden_tran.gamma
-        if 'beta_hidden_tran' not in weights.keys():
-            weights['beta_hidden_tran'] = self.bn_hidden_tran.beta
-        if 'gamma_output_tran' not in weights.keys():
-            weights['gamma_output_tran'] = self.bn_output_tran.gamma
-        if 'beta_output_tran' not in weights.keys():
-            weights['beta_output_tran'] = self.bn_output_tran.beta
-        if 'gamma_hidden_comb' not in weights.keys():
-            weights['gamma_hidden_comb'] = self.bn_hidden_comb.gamma
-        if 'beta_hidden_comb' not in weights.keys():
-            weights['beta_hidden_comb'] = self.bn_hidden_comb.beta
-        if 'gamma_output_comb' not in weights.keys():
-            weights['gamma_output_comb'] = self.bn_output_comb.gamma
-        if 'beta_output_comb' not in weights.keys():
-            weights['beta_output_comb'] = self.bn_output_comb.beta
-
         return inputs, outputs, weights, {}, {}
 
     def build_tran(self, swrm_state, swrm_param, training, weights):

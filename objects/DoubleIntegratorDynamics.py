@@ -91,9 +91,4 @@ class DoubleIntegratorDynamics(AbstractDynamics):
         v_new = v + self.dt*a_new
         p_new = p + self.dt*v_new
 
-        if 'gamma_hidden' not in weights.keys():
-            weights['gamma_hidden'] = self.bn_hidden.gamma
-        if 'beta_hidden' not in weights.keys():
-            weights['beta_hidden'] = self.bn_hidden.beta
-
         return tf.concat((p_new, v_new), axis=1)

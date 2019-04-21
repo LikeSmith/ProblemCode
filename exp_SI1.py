@@ -23,7 +23,6 @@ verbosity = 2
 use_best = True
 regen_data = True
 patience = 10
-use_lr_search = False
 lr_min = 10e-6
 lr_max = 10
 beta = 0.98
@@ -93,16 +92,7 @@ prnt_param_gen = lambda n: rand_vectors(n, np.array([J_min, gamma_1_min, gamma_2
 
 n_steps = int(t_f/dt)+1
 
-if use_lr_search:
-    abst_trainer = lambda lr: tf.train.AdamOptimizer(learning_rate=lr)
-    prnt_trainer = lambda lr: tf.train.AdamOptimizer(learning_rate=lr)
-    swrm_trainer = lambda lr: tf.train.AdamOptimizer(learning_rate=lr)
-    full_trainer = lambda lr: tf.train.AdamOptimizer(learning_rate=lr)
-else:
-    abst_trainer = tf.train.RMSPropOptimizer(learning_rate=0.001)
-    prnt_trainer = tf.train.RMSPropOptimizer(learning_rate=0.01)
-    swrm_trainer = tf.train.RMSPropOptimizer(learning_rate=0.01)
-    full_trainer = tf.train.AdamOptimizer(learning_rate=0.001)
+full_trainer = tf.train.AdamOptimizer(learning_rate=0.001)
 
 prnt_dyn_params = {}
 prnt_dyn_params['del_t'] = dt
@@ -180,16 +170,9 @@ full_trn_params['Q_p'] = Q_p
 full_trn_params['R_i'] = R_i
 full_trn_params['n_steps'] = n_steps
 full_trn_params['L'] = p_max - p_min
-#full_trn_params['gamma_l1_abs'] = 0.01
-full_trn_params['gamma_l2_abs'] = 0.01
-#full_trn_params['gamma_l1_swm'] = 0.01
-full_trn_params['gamma_l2_swm'] = 0.01
-#full_trn_params['gamma_l1_prt'] = 0.01
-full_trn_params['gamma_l2_prt'] = 0.01
+#full_trn_params['gamma_l1'] = 0.01
+full_trn_params['gamma_l2'] = 0.01
 full_trn_params['trainer'] = full_trainer
-full_trn_params['trainer_abs'] = abst_trainer
-full_trn_params['trainer_swm'] = swrm_trainer
-full_trn_params['trainer_prt'] = prnt_trainer
 full_trn_params['prnt_state_gen'] = prnt_state_gen
 full_trn_params['prnt_param_gen'] = prnt_param_gen
 full_trn_params['swrm_state_gen'] = swrm_state_gen
@@ -203,7 +186,6 @@ full_trn_params['prt_pol_autosave_file'] = lambda epoch:'autosave_epoch%d_prt_po
 full_trn_params['swm_pol_autosave_file'] = lambda epoch:'autosave_epoch%d_swm_pol.pkl'%(epoch,)
 full_trn_params['patience'] = patience
 full_trn_params['use_best'] = use_best
-full_trn_params['use_lr_search'] = use_lr_search
 full_trn_params['lr_min'] = lr_min
 full_trn_params['lr_max'] = lr_max
 full_trn_params['beta'] = beta
